@@ -1,0 +1,21 @@
+{
+    "name": "gowd/filemanager",
+    "description": "Manage documents and upload files",
+    "authors": [
+        {
+            "name": "mohammad yousefi",
+            "email": "myousefi62@gmail.com"
+        }
+    ],
+    "outuload" : {
+        "psr-4": {
+            "Gowd\\FileManager": "src/"
+        }
+    },
+    "require": {
+        "illuminate/support" : "~6",
+        "illuminate/notifications": "*",
+        "guzzlehttp/guzzle": "*",
+        "ext-json": "*"
+    }
+}
