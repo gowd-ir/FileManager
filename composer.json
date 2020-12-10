@@ -1,6 +1,7 @@
 {
     "name": "gowd/filemanager",
     "description": "Manage documents and upload files",
+    "license": "MIT",
     "authors": [
         {
             "name": "mohammad yousefi",
