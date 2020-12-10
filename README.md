@@ -1,2 +1,2 @@
 # FileManager
-Manage documents and upload files
+Manage documents and upload files.
