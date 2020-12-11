@@ -10,7 +10,7 @@ class FileManagerServiceProvider extends ServiceProvider{
             return new FileManager;
         });
 
-         $this->mergeConfigFrom(__DIR__ . '/Config/FileManager.php','user');
+         $this->mergeConfigFrom(__DIR__ . '/Config/FileManager.php','FileManager');
 
     }
     public function boot(){
