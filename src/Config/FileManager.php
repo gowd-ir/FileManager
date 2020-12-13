@@ -8,7 +8,7 @@ return [
 |Here you can set up your file upload routes.
 |
 */
-    "route_prefix" => 'ehelfileupload',
+    "route_prefix" => 'api/doc',
     "route_name"   => 'upload',
     /*
 |--------------------------------------------------------------------------
@@ -23,14 +23,9 @@ return [
 
 
 
-    /*
-|--------------------------------------------------------------------------
-| Rewrite File
-|--------------------------------------------------------------------------
-|Set to true if you want to rewrite existing file
-|or set to false if you want to store the new file
-|without delete existing (on re-upload).
-|
-*/
-    "rewrite_file" => true
+'UploadPath'=>[
+    'image'=>'Photos',
+    'video'=>'Videos',
+    'audio'=>'AudioFiles'
+]
 ];

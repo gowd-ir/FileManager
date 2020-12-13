@@ -17,6 +17,7 @@
         "illuminate/support" : "~6",
         "illuminate/notifications": "*",
         "guzzlehttp/guzzle": "*",
-        "ext-json": "*"
+        "ext-json": "*",
+        "intervention/image": "^2.5"
     }
 }

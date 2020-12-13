@@ -2,10 +2,16 @@
 
 namespace Gowd\FileManager\Http\Controllers;
 
+//use Faker\Provider\Image;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Lang;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Gowd\FileManager\Models;
+
+//use Intervention\Image\Image;
+use Intervention\Image\Facades\Image;
 
 class UploadController extends BaseController
 {
@@ -18,27 +24,103 @@ class UploadController extends BaseController
      */
     public function store(Request $request)
     {
-       if(!is_null($request->get('file_path')) && config('FileManager.rewrite_file')){
-            $this->deleteFile($request);
-        }
-        $directory = $request->get('directory');
 
+        $Validation = $request->validate([
+            'file'=> 'required|file|mimes:webm,webp,jpg,jpeg,png,mp4,mp3'
+        ]);
 //        dd([
+//            'Validation'=>$Validation['file'],
 //            'file_path'=>$request->get('file_path'),
 //            'directory'=>$request->get('directory'),
 //            'rewrite_file'=>config('FileManager.rewrite_file'),
-//            'request'=>$request
+//            'MimeType'=>$request->file('file')->getMimeType(),
+//            'extension'=>$request->file('file')->extension(),
+////            'FielType' => explode("/", $request->file('file')->getMimeType())[0] ,
+////            'user_id'=> $request->get('user')['id'],
+////            'FileName' => explode("/", $request->file('file')->getMimeType())[0].'_'.$request->get('user')['id'].'_'.time().'.'.$request->file('file')->extension(),
+////            'OriginalName'=>$request->file('file')->getClientOriginalName(),
+////            'Date' => date("Y-m-d"),
+////            'path'=>explode("/", $request->file('file')->getMimeType())[0].'/'.$request->get('user')['id'].'/'.date("Y-m-d"),
+////            'file'=>$request->file,
+////            'request'=>$request
 //        ]);
-        if ($request->file('file')) {
-//            dd(['dd'=>'ddd']);
-            $file = $this->getFile('file', $directory, $request);
-//            if ($file && $file != 'error') {
-//                return response()->json($file);
-//
-//
-//            } else {
-//                return response()->json('File is not valid!');
+        $file = $Validation['file'];
+        $FileType = $request->get('FileType');
+        $mime_type = Models\mime_type::where('title', $file->getMimeType())->first();
+        $mime_type_id = $mime_type->id;
+        $type_File = $mime_type->file_type->title;
+        $user_id = $request->get('user')->id;
+        $extension = $file->extension();
+        $NewFileName = $type_File.'_'.$user_id.'_'.time().'.'.$extension;
+        $OriginalFileName = $request->file('file')->getClientOriginalName();
+        $file_path = config('FileManager.UploadPath.'.$type_File).'/'.$user_id.'/'.date("Y-m-d");
+//        dd([
+//              'file_type'=>$type_File
+//            , 'mime_type_id' => $mime_type_id
+//            , 'user_id' =>$user_id
+//            , 'extension'=>$extension
+//            , 'NewFileName'=>$NewFileName
+//            , 'OriginalFileName' =>$OriginalFileName
+//            , 'file_path' => $file_path
+//            , 'FileType' => $FileType
+//            , 'orginal_file_path' => $file->getRealPath()
+//        ] );
+        try {
+//            if ($type_File === 'image' and $FileType === 'Avatar')
+//            {
+//                $file = Image::make($file)->resize(600, null, function ($constraint) {
+//                    $constraint->aspectRatio();
+//                })->encode('jpg');
+//                $save = Storage::put($file_path, $file->__toString());
+//                $orginFiel =$file;
+//                //$file = Image::make($file->getRealPath())->resize(300,300);
+////                $file->move('/images/products');
+//                //$file->save($file_path.'/dd.jpg');
+//                dd(['orginFiel'=>$file_path]);
 //            }
+            Storage::disk('public')->putFileAs($file_path,$file,$NewFileName);
+//            $file = Image::make($file_path.'/'.$NewFileName)->resize(300,300);
+            $file_uploded = new Models\file(['user_id'=>$user_id ,'mime_type_id' => $mime_type_id, 'name'=>$NewFileName , 'original_name'=>$OriginalFileName,'ext'=>$extension,'file_path'=>$file_path]);
+//            $mime_type->files()->associate($file_uploded);
+            $file_uploded->save();
+            $url = 'http://'.request()->getHttpHost() .'/storage/'.$file_path.'/'.$NewFileName;
+            //gowd.developer/storage/audio/1/2020-12-12/audio_1_1607741096.mp3
+            //gowd.developer/storage/audio/1/2020-12-12/audio_1_1607740157.mp3
+            $Message =[
+                'data'=> ['url' =>$url,'FileName' => $NewFileName],
+                'message'=>[
+                    'title'=>Lang::get('messages.Successful'),
+                    'body' => Lang::get('messages.UploadSuccessful'),
+                    'isSuccess'=>true
+                ]];
+
+            return $Message;
+//            $download = Storage::
+//            dd([
+//                'file_type'=>$type_File
+//                , 'mime_type_id' => $mime_type_id
+//                , 'user_id' =>$user_id
+//                , 'extension'=>$extension
+//                , 'NewFileName'=>$NewFileName
+//                , 'OriginalFileName' =>$OriginalFileName
+//                , 'file_path' => $file_path
+//                , 'url' => $url
+//                , 'Fullurl' => $storagePath  = Storage::disk('public')->getDriver()->getAdapter()->getPathPrefix()
+////                , 'cofile' => Storage::disk('public')->get($file_path.'/'.$NewFileName)
+//
+//            ] );
+        }
+        catch (Exception $e)
+        {
+            dd([
+                   'file_type000'=>$type_File
+                 , 'mime_type_id' => $mime_type_id
+                 , 'user_id' =>$user_id
+                 , 'extension'=>$extension
+                 , 'NewFileName'=>$NewFileName
+                 , 'OriginalFileName' =>$OriginalFileName
+                 , 'file_path' => $file_path
+                ] );
         }
     }
 
@@ -49,87 +131,17 @@ class UploadController extends BaseController
      * @param $request
      * @return array|bool|string
      */
-    protected function getFile($input, $source, $request)
+    protected function getFile(Request $request)
     {
-//        dd(['input' => $input, 'source'=>$source, 'request'=>$request]);
-        $file = $request->file($input);
-
-        if ($file) {
-//            dd(['file'=>$file]);
-            return $this->processFile($file, $source);
-        } else {
-
-            return false;
-        }
-    }
-    /**
-     * Validate and save file
-     * @param $file
-     * @param $extraDirectory
-     * @return array|string
-     */
-    protected function processFile($file, $extraDirectory)
-    {
-
-        $extension = $file->extension();
-        $size = $file->getSize();
-
-        $mimes = config('FileManager.mimes');
-        $maxSize = config('FileManager.max_size');
-        $validation = new \StdClass;
-        $validation->error = false;
-        $validation->errors = array();
-        $validation->message = '';
-
-
-        if (!in_array($extension, $mimes)) {
-            $validation->error = true;
-            array_push($validation->errors, 'Restricted file extension');
-        }
-
-        if ($size > $maxSize) {
-            $validation->error = true;
-            array_push($validation->errors, 'File size is more than 50 mb.');
-
-        }
-//        dd(['file001'=>$file,'validation'=>$validation,'file'=>$file->getSize(),'file00'=>$file->extension() ,'extraDirectory'=> $extraDirectory]);
-        if ($validation->error) {
-            return $validation;
-        } else {
-            if ($file->isValid()) {
-                $destinationPath = config('FileManager.path') . $extraDirectory;
-                $fileName = $extraDirectory . '_' . rand(11111, 99999) . '.' . $extension;
-
-                $file->move($destinationPath, $fileName);
-//                dd(['destinationPath'=>$destinationPath,'fileName'=>$fileName]);
-                $validation->message = $destinationPath . '/' . $fileName;
-                dd($validation);
-                return $validation;
-            } else {
-
-                return 'error';
-            }
-        }
-    }
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  Request $request
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Request $request)
-    {
-        $this->deleteFile($request);
+        $FileName = $request->FileName;
+        $file = Models\file::where('name', $FileName)->first();
+        //dd([
+        //    'request'=>$request->FileName
+        //    ,'file' => $file
+        //    ,'file_content' => $file->file_path.'/'.$file->name
+        //    ,'cofile' => Storage::disk('public')->get($file->file_path.'/'.$file->name)
+        //]);
+ return  Storage::disk('public')->get($file->file_path.'/'.$file->name);
     }
 
-    /**
-     * Delete file
-     * @param Request $request
-     */
-    protected function deleteFile(Request $request)
-    {
-        $filename = $request->input('file_path');
-        $fullpath = public_path() . '/' . $filename;
-        File::delete($fullpath);
-    }
 }
